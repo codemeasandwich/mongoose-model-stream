@@ -1,0 +1,44 @@
+{
+  "name": "mongoose-model-restore",
+  "version": "1.0.0",
+  "description": "a mongoose model generator with a change stream",
+  "main": "index.js",
+  "bin": {},
+  "directories": {
+    "example": "example"
+  },
+  "dependencies": {
+    "mongoose": "^4.6.3"
+  },
+  "devDependencies": {
+    "Faker": "^0.7.2",
+    "chai": "^3.5.0",
+    "coveralls": "^2.11.12",
+    "istanbul": "^0.4.4",
+    "mocha": "^3.0.1"
+  },
+  "scripts": {
+    "example": "example/sample.js",
+    "test": "mocha ./test.js",
+    "test-travis": "./node_modules/istanbul/lib/cli.js cover ./node_modules/mocha/bin/_mocha -- -R spec ./test.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/codemeasandwich/mongoose-model-restore.git"
+  },
+  "homepage": "https://github.com/codemeasandwich/mongoose-model-restore",
+  "keywords": [
+    "mongoose",
+    "restore",
+    "orm",
+    "undelete"
+  ],
+  "author": {
+    "name": "Brian Shannon",
+    "url": "https://github.com/codemeasandwich/"
+  },
+  "license": "Apache License 2.0",
+  "bugs": {
+    "url": "https://github.com/codemeasandwich/mongoose-model-restore/issues"
+  }
+}

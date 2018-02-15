@@ -26,16 +26,30 @@ module.exports = function modulePlus(modelNameS, schema, enableDownStream = true
 
   const streamDB = mongoose.model('!' + modelNameS, streamSchema);
 
-  schema.pre('save', function(next, aF) {
+//+++++++++++++++++++++++++++++++++++++++++++++++ SAVE
+//++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+  schema.pre('save', function() {
 
     modelDB.findById(this._id)
-    .then(oldDocInDb => rfc6902.createPatch((oldDocInDb ? oldDocInDb.toObject() : {}),this.toObject()))
-    .then(patchs => streamDB.create({patchs,target:this._id}))
+    .then(oldDoc => [!!oldDoc,oldDoc || {},this])
+    .then(([exists,oldDoc,newDoc]) => [exists,
+      JSON.parse(JSON.stringify(oldDoc)), // https://github.com/chbrown/rfc6902/issues/15
+      JSON.parse(JSON.stringify(newDoc))])
+    .then(([exists,oldDoc,newDoc]) => {
+
+      let patchs = rfc6902.createPatch(oldDoc,newDoc)
+
+      // if we have a updatedAt time. Use it as a check
+      if(exists && oldDoc.updatedAt){
+        patchs = [{ op: "test", path: "/updatedAt", value: oldDoc.updatedAt },...patchs]
+      }
+      streamDB.create({patchs,target:newDoc._id})
+    })
     .catch(function(err){
       throw err;
     });
 
-    next();
   });// END schema pre 'save'
 
 //+++++++++++++++++++++++++++++++++++++++++++++ REMOVE

@@ -32,16 +32,15 @@ module.exports = function modulePlus(modelNameS, schema, enableDownStream = true
   schema.pre('save', function() {
 
     modelDB.findById(this._id)
-    .then(oldDoc => [!!oldDoc,oldDoc || {},this])
-    .then(([exists,oldDoc,newDoc]) => [exists,
-      JSON.parse(JSON.stringify(oldDoc)), // https://github.com/chbrown/rfc6902/issues/15
-      JSON.parse(JSON.stringify(newDoc))])
-    .then(([exists,oldDoc,newDoc]) => {
+    .then(oldDoc => [ // https://github.com/chbrown/rfc6902/issues/15
+      oldDoc ? JSON.parse(JSON.stringify(oldDoc)) : {},
+      JSON.parse(JSON.stringify(this))])
+    .then(([oldDoc,newDoc]) => {
 
       let patchs = rfc6902.createPatch(oldDoc,newDoc)
 
       // if we have a updatedAt time. Use it as a check
-      if(exists && oldDoc.updatedAt){
+      if(oldDoc.updatedAt){
         patchs = [{ op: "test", path: "/updatedAt", value: oldDoc.updatedAt },...patchs]
       }
       streamDB.create({patchs,target:newDoc._id})

@@ -1,6 +1,6 @@
 {
   "name": "mongoose-model-stream",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "a mongoose model generator with a change stream",
   "main": "index.js",
   "bin": {},
@@ -8,7 +8,8 @@
     "example": "example"
   },
   "dependencies": {
-    "mongoose": "^4.6.3",
+    "mongoose": "^5.0.5",
+    "rfc6902": "^2.2.2",
     "rx": "^4.1.0"
   },
   "devDependencies": {
@@ -27,14 +28,16 @@
     "type": "git",
     "url": "git://github.com/codemeasandwich/mongoose-model-stream.git"
   },
-  "homepage": "https://github.com/codemeasandwich/mongoose-model-stream",
+  "homepage": "https://www.npmjs.com/package/mongoose-model-stream",
   "keywords": [
     "mongoose",
+    "diff",
     "stream",
     "rx",
     "rxjs",
     "orm",
-    "socket"
+    "socket",
+    "rfc6902"
   ],
   "author": {
     "name": "Brian Shannon",

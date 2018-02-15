@@ -2,11 +2,11 @@
 
 const mongooseO = require('mongoose');
       mongooseO.Promise = global.Promise;
-      
+
 const Schema = mongooseO.Schema;
 const dbO = mongooseO.connect('mongodb://localhost/testmongoosestream');
 
-const modulePlus = require('./..');
+const modulePlus = require('./..');//mongoose-model-stream
 
 // ############################### Test with timestamps
 // ####################################################
@@ -44,10 +44,9 @@ setTimeout(function () {
 //+++++++++++++++++++++++++++++++++++++++++++++ update
 
       chatMessage.save();
-    }, 1000);
+    }, 100);
   });
-}, 1000);
-
+}, 100);
 
 
 
@@ -62,11 +61,13 @@ const BModule = modulePlus('B', BSchema);
 
 //===================================== start listening
 
-const BTest = ['create','update','update'];
 let Bcount = 0;
-BModule.stream$.subscribe(function(doc){
-  
-  console.log(Bcount+"B "+BTest[Bcount]+" "+doc.text+doc, BTest[Bcount] == doc);
+const BChanges=[3,1,1];
+const BActions=["add","replace","replace"]
+
+BModule.stream$.subscribe(function({patchs}){
+  console.log(BChanges[Bcount].legnth === patchs.legnth
+    && patchs.every(({op})=>op === BActions[Bcount]));
   Bcount++;
   }, console.error, console.info);
 
@@ -94,14 +95,15 @@ setTimeout(function () {
 //+++++++++++++++++++++++++++++++++++++++++++++ update
 
       chatMessage.save();
-    }, 1000);
+    }, 100);
   });
-}, 1000);
+}, 100);
+
 
 
 // ###################################### Test removing
 // ####################################################
-
+/*
 //=============================================== Logic
 const CSchema = new Schema({ text: String });
 
@@ -122,21 +124,13 @@ setTimeout(function () {
 
 //+++++++++++++++++++++++++++++++++++++++++++++ create
   CModule.create({ text: "foo_C" })
-  
+
   .then(function (chatMessage) {
 //+++++++++++++++++++++++++++++++++++++++++++++ remove
     return chatMessage.remove();
   }).catch(console.error)
-}, 1000);
+}, 100);
+*/
 
 
-
-
-
-
-
-
-
-
-
-
+//process.exit()

@@ -1,57 +1,60 @@
 "use strict";
 
-var Subject = require('rx').Subject;
+//https://tools.ietf.org/html/rfc6902
+//https://www.npmjs.com/package/rfc6902
 
-var mongoose = require('mongoose');
+const rfc6902 = require('rfc6902');
+const Subject = require('rx').Subject;
+const mongoose = require('mongoose');
+
+//++++++++++++++++++++++++++++++++++++++++++++++ Setup
+//++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+const patch = new mongoose.Schema({
+    op: { type: String, required: true },
+    path: { type: String, required: true },
+    from:String, value:String
+  },{ _id : false });
+const streamSchema = new mongoose.Schema({ patchs: [patch],  target:mongoose.Schema.Types.ObjectId },
+                                         { timestamps: true, capped: 1024 });
+
+//=====================================================
+// ========================================= modulePlus
+//=====================================================
 
 module.exports = function modulePlus(modelNameS, schema, enableDownStream = true) {
-
-  const streamEnum = Object.freeze({create:'create', update:'update', remove:'remove', restore:'restore'});
-  const streamAttributes = {
-    action: {
-      type: String,
-      enum: Object.keys( streamEnum ).map( propName => streamEnum[propName] )
-    },
-    Data: Object
-  };
-  const streamOptions = { timestamps: true, capped: 1024 };
-  const streamSchema = new mongoose.Schema(streamAttributes, streamOptions);
 
   const streamDB = mongoose.model('!' + modelNameS, streamSchema);
 
   schema.pre('save', function(next, aF) {
-    // this = data
-    
-    var actionS = streamEnum.update;
-    if (this.deletedAt) {
-      actionS = streamEnum.remove;
-    } else if (null === this.deletedAt) {
-      actionS = streamEnum.restore;
-      this.deletedAt = undefined;
-    } else if (this.isNew) {
-      actionS = streamEnum.create;
-    }
 
-    streamDB.create({ action: actionS, Data: this })
+    modelDB.findById(this._id)
+    .then(oldDocInDb => rfc6902.createPatch((oldDocInDb ? oldDocInDb.toObject() : {}),this.toObject()))
+    .then(patchs => streamDB.create({patchs,target:this._id}))
     .catch(function(err){
       throw err;
     });
 
     next();
-  });
+  });// END schema pre 'save'
 
-  
 //+++++++++++++++++++++++++++++++++++++++++++++ REMOVE
 //++++++++++++++++++++++++++++++++++++++++++++++++++++
 
     schema.pre('remove', function preRemove(next,reject) {
 
-      streamDB.create({ action: 'remove', Data: this});
+      streamDB.create({
+        patchs:[{op: "remove", path: "/"}],
+        target:this._id
+      });
 
       next();
-      
-    });
-   // process.stdout.write(  process.title  );
+
+    });// END schema pre 'remove'
+
+//+++++++++++++++++++++++++++++++++++++++++++++
+//++++++++++++++++++++++++++++++++++++++++++++++++++++
+
   const modelDB = mongoose.model(modelNameS, schema);
 
   if (enableDownStream) {
@@ -64,33 +67,17 @@ module.exports = function modulePlus(modelNameS, schema, enableDownStream = true
       return true;
     }).then( () => {
 
-      const Stream = streamDB.find({ createdAt: { $gt: new Date() } }).tailable({ "awaitdata": true }).cursor();
-      Stream.on('data', (doc) => {
-      
-        function Fn(_data){
-          
-          for(let propName in _data){
-            this[propName] = _data[propName];
-          }
-        }
-       
-       Fn.prototype.id = doc.Data.id || doc.Data._id;
-       
-        Fn.prototype.valueOf = function () {
-          return doc.action;
-        };
-        Fn.prototype.toString = function () {
-          return doc.action;
-        };
-        
-        modelDB.stream$.onNext(new Fn(doc.Data));
-      });
-      Stream.on('error', doc => modelDB.stream$.onError(doc) );
-      Stream.on('close', ( ) => modelDB.stream$.onCompleted() );
+      const Stream = streamDB.find({ createdAt: { $gt: new Date() } })
+                             .tailable({ "awaitdata": true })
+                             .cursor();
+
+      Stream.on('data', (change) => modelDB.stream$.onNext(change));
+      Stream.on('error',( doc    ) => modelDB.stream$.onError(doc));
+      Stream.on('close',(        ) => modelDB.stream$.onCompleted());
     }).catch((err) => {
       throw err;
     });
-  }
+  } // END enableDownStream
 
   return modelDB;
-};
+}; // function modulePlus

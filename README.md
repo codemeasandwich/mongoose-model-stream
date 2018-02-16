@@ -57,72 +57,72 @@ The payload looks like:
 node example/sample.js
 ```
 
----
-
-# v1.x.x Api
-
-### stream$ (think of it like "find", but tailing the collection)
-An [RxJs] [Observable](http://reactivex.io/rxjs/class/es6/Observable.js~Observable.html) for change events like ('create', 'update', 'remove' &  ['restore'](https://npmjs.com/codemeasandwich/mongoose-model-restore))
-
-> the event type is a string 'create', 'update', 'remove' or  'restore'
-> **That is set as the object's toSring/valueOf**
+# Example
 
 ``` js
-Chat.stream$.map(function (doc) {
-  return doc + ' ' + (doc == "update") + ' ' + JSON.stringify(doc) + ' ';
-})
-.subscribe(console.log, // data
-console.error, // error
-console.info); // close
+const { Schema } = require('mongoose');
+const moduleWithStream = require('mongoose-model-stream');
 
- // "update true { "text":"bar", "id":"57ff5d867fb7794f9c52a21f"}"
+// create a schema
+const ChatSchema = new Schema({ text: String }, { timestamps: true });
+
+// create a module
+const Chat = moduleWithStream('Chat', ChatSchema);
+
+// subscribe to change events
+Chat.stream.subscribe(console.log, console.error, console.info);
+
+Chat.create({ text: "foo" })
+    .then(function (chatMessage) {
+        chatMessage.text = "bar";
+ return chatMessage.save();
+    }).then(function (chatMessage) {
+        chatMessage.text = "baz";
+        chatMessage.save();
+    }).catch(console.error);
 ```
 
-# v1.x.x Example
+### Output:
 
+**Change: 1**
 ``` js
-const mongoose = require('mongoose');
-const Schema = mongoose.Schema;
-const modulePlus = require('mongoose-model-stream');
-
-//=============================================== Logic
-const ChatSchema = new Schema({  text: String }, { timestamps: true });
-
-//=========================================== generator
-const ChatDB = modulePlus('Chat', ChatSchema);
-
-//===================================== start listening
-ChatDB.stream$.subscribe(console.log, console.error, console.info);
-
-//======================================= start example
-setTimeout(function () {
-
-//+++++++++++++++++++++++++++++++++++++++++++++ create
-  ChatDB.create({ text: "foo" })
-  .then(function (chatMessage) {
-
-    console.log(" >> FROM ", 'text = "' + chatMessage.text + '"');
-    chatMessage.text = "bar";
-    console.log(" >> TO ", 'text = "' + chatMessage.text + '"');
-
-//+++++++++++++++++++++++++++++++++++++++++++++ update
-    return chatMessage.save();
-  }).then(function (chatMessage) {
-
-    setTimeout(function () {
-
-      console.log(" >>> FROM ", 'text = "' + chatMessage.text + '"');
-      chatMessage.text = "baz";
-      console.log(" >>> TO ", 'text = "' + chatMessage.text + '"');
-
-//+++++++++++++++++++++++++++++++++++++++++++++ update
-
-      chatMessage.save();
-    }, 1000);
-  });
-}, 1000);
-
+{ patchs:
+   [ { op: 'add', path: '/', value: {} },
+     { op: 'add', path: '/text', value: 'foo' },
+     { op: 'add', path: '/_id', value: '5a86eea992f78d54f1cd65e9' },
+     { op: 'add', path: '/updatedAt', value: '2018-08-12T04:46:01.993Z' },
+     { op: 'add', path: '/createdAt', value: '2018-08-12T04:46:01.993Z' } ],
+  _id: '5a86eeaa92f78d54f1cd65ea',
+  target: '5a86eea992f78d54f1cd65e9',
+  createdAt: '2018-08-12T04:46:02.009Z',
+  updatedAt: '2018-08-12T04:46:02.009Z'
+}
 ```
 
+**Change: 2**
+``` js
+{ patchs:
+   [ { op: 'test', path: '/updatedAt', value: '2018-08-12T04:46:01.993Z' },
+     { op: 'replace', path: '/text', value: 'bar' },
+     { op: 'replace', path: '/updatedAt', value: '2018-08-12T04:46:02.116Z' }, ],
+  _id: '5a86eeaa92f78d54f1cd65eb',
+  target: '5a86eea992f78d54f1cd65e9',
+  createdAt: '2018-08-12T04:46:02.022Z',
+  updatedAt: '2018-08-12T04:46:02.022Z'
+ }
+```
+
+**Change: 3**
+``` js
+{ patchs:
+   [ { op: 'test', path: '/updatedAt', value: '2018-08-12T04:46:02.116Z' },
+     { op: 'replace', path: '/text', value: 'baz' },
+     { op: 'replace', path: '/updatedAt', value: '2018-08-12T04:46:02.342Z' }, ],
+  _id: '5a86eeaa92f78d54f1cd65ec',
+  target: '5a86eea992f78d54f1cd65e9',
+  createdAt: '2018-08-12T04:46:02.122Z',
+  updatedAt: '2018-08-12T04:46:02.122Z'
+ }
+```
 [RxJs]: http://reactivex.io/rxjs/
 [rfc6902]: https://tools.ietf.org/html/rfc6902

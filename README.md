@@ -4,36 +4,33 @@ a mongoose model generator with a change stream
 
 **info:**
 
-[![npm version](https://badge.fury.io/js/mongoose-model-stream.svg)](https://badge.fury.io/js/graphql-mongoose-model-stream)
+[![npm version](https://badge.fury.io/js/mongoose-model-stream.svg)](https://www.npmjs.com/package/mongoose-model-stream)
 [![License](http://img.shields.io/:license-apache_2-yellow.svg)](https://www.apache.org/licenses/LICENSE-2.0)
-[![pull requests welcome](https://img.shields.io/badge/Pull%20requests-welcome-pink.svg)](https://github.com/codemeasandwich/mongoose-model-stream/pulls)
 
 
 ### If this was helpful, [★ it on github](https://github.com/codemeasandwich/mongoose-model-stream)
 
-
-## [Demo / Sandbox](https://tonicdev.com/codemeasandwich/57a0727c80254315001cb366) :thumbsup:
-
 # Install
 
-`npm install mongoose-model-stream`
+`yarn add mongoose-model-stream` or `npm install --save mongoose-model-stream`
 
-# Api
+# How to Use
 
 ``` js
 const modelPlus = require('mongoose-model-stream');
 ```
 
 ### constructor
-query/mutator you wish to use, and an alias or filter arguments.
 
-| Argument (**one** to **two**)  | Description
-|--- |---
-| String | modelNameS: name of model
-| Object | schema: model definition
-| * Bool | (**optional**) enableDownStream = TRUE : Should start listening for changes and __ADD__ stream$ PROP
-"mongoose-model-stream" will always push changes, but the '**enableDownStream**' options is wheat you want to also receive changes. 
-**e.g.**  a "**log**"! you would want to push changes but an a large site. This this would be a lot of traffic, that only an Admin interface would want to listen for.
+This `modelPlus` function takes two arguments.
+
+* `modelName`: The name of the model
+* `schema` : The schema definition of the model.
+
+There is also an optional 3rd argument.
+
+* `enableDownStream` : Change will create change events, without listening to the stream for updates. *(Default: `true`)*
+
 
 ``` js
 const ChatSchema = new mongoose.schema({
@@ -41,13 +38,34 @@ const ChatSchema = new mongoose.schema({
 });
 
 const Chat = modelPlus('Chat', ChatSchema);
-``` 
+```
+
+# v2.x.x Api
+
+Attached to `Chat` will be a `.stream` baced on [RxJs]. This will **emit** change events baced on [rfc6902]
+
+The payload looks like:
+
+| Property | Type |Description
+|--- |--- |---
+| patchs | Array | Present for all changes to the item. - An array of [rfc6902] operations.
+| target | String(ID) | The Unique identifier for the item
+
+## run samples
+
+``` bash
+node example/sample.js
+```
+
+---
+
+# v1.x.x Api
 
 ### stream$ (think of it like "find", but tailing the collection)
-An [RxJs](http://reactivex.io/rxjs/) [Observable](http://reactivex.io/rxjs/class/es6/Observable.js~Observable.html) for change events like ('create', 'update', 'remove' &  ['restore'](https://npmjs.com/codemeasandwich/mongoose-model-restore))
+An [RxJs] [Observable](http://reactivex.io/rxjs/class/es6/Observable.js~Observable.html) for change events like ('create', 'update', 'remove' &  ['restore'](https://npmjs.com/codemeasandwich/mongoose-model-restore))
 
-> the event type is a string 'create', 'update', 'remove' or  'restore' 
-> **That is set as the object's toSring/valueOf** 
+> the event type is a string 'create', 'update', 'remove' or  'restore'
+> **That is set as the object's toSring/valueOf**
 
 ``` js
 Chat.stream$.map(function (doc) {
@@ -58,19 +76,11 @@ console.error, // error
 console.info); // close
 
  // "update true { "text":"bar", "id":"57ff5d867fb7794f9c52a21f"}"
-``` 
-
-
-
-## run samples
-
-``` bash
-node example/sample.js
 ```
 
-# Example
+# v1.x.x Example
 
-``` js 
+``` js
 const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
 const modulePlus = require('mongoose-model-stream');
@@ -111,5 +121,8 @@ setTimeout(function () {
     }, 1000);
   });
 }, 1000);
-    
+
 ```
+
+[RxJs]: http://reactivex.io/rxjs/
+[rfc6902]: https://tools.ietf.org/html/rfc6902

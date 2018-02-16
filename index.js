@@ -13,10 +13,10 @@ const mongoose = require('mongoose');
 const patch = new mongoose.Schema({
     op: { type: String, required: true },
     path: { type: String, required: true },
-    from:String, value:String
+    from:String, value:mongoose.Schema.Types.Mixed
   },{ _id : false });
 const streamSchema = new mongoose.Schema({ patchs: [patch],  target:mongoose.Schema.Types.ObjectId },
-                                         { timestamps: true, capped: 1024 });
+                                         { timestamps: true, capped: 1024, minimize: false  });
 
 //=====================================================
 // ========================================= modulePlus
@@ -32,22 +32,25 @@ module.exports = function modulePlus(modelNameS, schema, enableDownStream = true
   schema.pre('save', function() {
 
     modelDB.findById(this._id)
-    .then(oldDoc => [ // https://github.com/chbrown/rfc6902/issues/15
+    .then(oldDoc => [
+      !!oldDoc,
+      // https://github.com/chbrown/rfc6902/issues/15
       oldDoc ? JSON.parse(JSON.stringify(oldDoc)) : {},
       JSON.parse(JSON.stringify(this))])
-    .then(([oldDoc,newDoc]) => {
+    .then(([exists,oldDoc,newDoc]) => {
 
       let patchs = rfc6902.createPatch(oldDoc,newDoc)
 
-      // if we have a updatedAt time. Use it as a check
-      if(oldDoc.updatedAt){
+      if(!exists){
+        patchs = [{ op: "add", path: "/", value: {} },...patchs]
+      }// if we have a updatedAt time. Use it as a check
+      else if(oldDoc.updatedAt){ // TODO: add schema.pre('validate', ...) to reject save if patchs.length is ZERO
         patchs = [{ op: "test", path: "/updatedAt", value: oldDoc.updatedAt },...patchs]
       }
+
       streamDB.create({patchs,target:newDoc._id})
     })
-    .catch(function(err){
-      throw err;
-    });
+    .catch((err)=>{ throw err });
 
   });// END schema pre 'save'
 
@@ -71,7 +74,7 @@ module.exports = function modulePlus(modelNameS, schema, enableDownStream = true
   const modelDB = mongoose.model(modelNameS, schema);
 
   if (enableDownStream) {
-    modelDB.stream$ = new Subject();
+    modelDB.stream = new Subject();
 
     streamDB.count().then((count) => {
       if (0 === count) {
@@ -84,9 +87,9 @@ module.exports = function modulePlus(modelNameS, schema, enableDownStream = true
                              .tailable({ "awaitdata": true })
                              .cursor();
 
-      Stream.on('data', (change) => modelDB.stream$.onNext(change));
-      Stream.on('error',( doc    ) => modelDB.stream$.onError(doc));
-      Stream.on('close',(        ) => modelDB.stream$.onCompleted());
+      Stream.on('data', (change) => modelDB.stream.onNext(change));
+      Stream.on('error',( doc    ) => modelDB.stream.onError(doc));
+      Stream.on('close',(        ) => modelDB.stream.onCompleted());
     }).catch((err) => {
       throw err;
     });

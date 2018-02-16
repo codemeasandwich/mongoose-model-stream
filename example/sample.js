@@ -18,17 +18,18 @@ const ASchema = new Schema({  text: String }, { timestamps: true });
 const AModule = modulePlus('A', ASchema);
 
 //===================================== start listening
-AModule.stream$.subscribe(console.log, console.error, console.info);
+AModule.stream.subscribe(console.log, console.error, console.info);
 
 //======================================= start example
 setTimeout(function () {
 
 //+++++++++++++++++++++++++++++++++++++++++++++ create
-  AModule.create({ text: "foo_A" })
+  AModule.create({ text: "foo_A" ,y : 1.2})
   .then(function (chatMessage) {
 
     console.log(" >> FROM ", 'text = "' + chatMessage.text + '"');
-    chatMessage.text = "bar_A";
+    chatMessage.text2 = "bar_A";
+    chatMessage.x = 1.2;
     console.log(" >> TO ", 'text = "' + chatMessage.text + '"');
 
 //+++++++++++++++++++++++++++++++++++++++++++++ update
@@ -49,7 +50,7 @@ setTimeout(function () {
 }, 100);
 
 
-
+/*
 // ########################### Test with-out timestamps
 // ####################################################
 
@@ -65,7 +66,7 @@ let Bcount = 0;
 const BChanges=[3,1,1];
 const BActions=["add","replace","replace"]
 
-BModule.stream$.subscribe(function({patchs}){
+BModule.stream.subscribe(function({patchs}){
   console.log(BChanges[Bcount].legnth === patchs.legnth
     && patchs.every(({op})=>op === BActions[Bcount]));
   Bcount++;
@@ -98,7 +99,7 @@ setTimeout(function () {
     }, 100);
   });
 }, 100);
-
+*/
 
 
 // ###################################### Test removing
@@ -114,7 +115,7 @@ const CModule = modulePlus('C', CSchema);
 
 const CTest = ['create','remove'];
 let Ccount = 0;
-CModule.stream$.subscribe(function(doc){
+CModule.stream.subscribe(function(doc){
   console.log(Ccount+" C >> "+CTest[Ccount]+" >> "+doc.text+ ' ++++ ' +doc, CTest[Ccount] == doc);
   Ccount++;
 }, console.error, console.info);

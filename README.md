@@ -40,7 +40,7 @@ const ChatSchema = new mongoose.schema({
 const Chat = modelPlus('Chat', ChatSchema);
 ```
 
-# v2.x.x Api
+# v2 Api
 
 Attached to `Chat` will be a `.stream` baced on [RxJs]. This will **emit** change events baced on [rfc6902]
 
@@ -87,15 +87,19 @@ Chat.create({ text: "foo" })
 **Change: 1**
 ``` js
 { patchs:
-   [ { op: 'add', path: '/', value: {} },
-     { op: 'add', path: '/text', value: 'foo' },
-     { op: 'add', path: '/_id', value: '5a86eea992f78d54f1cd65e9' },
-     { op: 'add', path: '/updatedAt', value: '2018-08-12T04:46:01.993Z' },
-     { op: 'add', path: '/createdAt', value: '2018-08-12T04:46:01.993Z' } ],
+   [ {
+     op: 'add',
+     path: '/',
+     value: {
+       text:'foo',
+       _id:'5a86eea992f78d54f1cd65e9',
+       updatedAt:'2018-08-12T04:46:01.993Z',
+       createdAt:'2018-08-12T04:46:01.993Z'
+     }
+   } ],
   _id: '5a86eeaa92f78d54f1cd65ea',
   target: '5a86eea992f78d54f1cd65e9',
-  createdAt: '2018-08-12T04:46:02.009Z',
-  updatedAt: '2018-08-12T04:46:02.009Z'
+  createdAt: '2018-08-12T04:46:02.009Z'
 }
 ```
 
@@ -107,8 +111,7 @@ Chat.create({ text: "foo" })
      { op: 'replace', path: '/updatedAt', value: '2018-08-12T04:46:02.116Z' }, ],
   _id: '5a86eeaa92f78d54f1cd65eb',
   target: '5a86eea992f78d54f1cd65e9',
-  createdAt: '2018-08-12T04:46:02.022Z',
-  updatedAt: '2018-08-12T04:46:02.022Z'
+  createdAt: '2018-08-12T04:46:02.022Z'
  }
 ```
 
@@ -120,8 +123,7 @@ Chat.create({ text: "foo" })
      { op: 'replace', path: '/updatedAt', value: '2018-08-12T04:46:02.342Z' }, ],
   _id: '5a86eeaa92f78d54f1cd65ec',
   target: '5a86eea992f78d54f1cd65e9',
-  createdAt: '2018-08-12T04:46:02.122Z',
-  updatedAt: '2018-08-12T04:46:02.122Z'
+  createdAt: '2018-08-12T04:46:02.122Z'
  }
 ```
 [RxJs]: http://reactivex.io/rxjs/

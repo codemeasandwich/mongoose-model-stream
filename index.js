@@ -15,8 +15,8 @@ const patch = new mongoose.Schema({
     path: { type: String, required: true },
     from:String, value:mongoose.Schema.Types.Mixed
   },{ _id : false });
-const streamSchema = new mongoose.Schema({ patchs: [patch],  target:mongoose.Schema.Types.ObjectId },
-                                         { timestamps: true, capped: 1024, minimize: false  });
+const streamSchema = new mongoose.Schema({ patchs: [patch],  target:mongoose.Schema.Types.ObjectId, createdAt:Date },
+                                         { capped: 1024, minimize: false  });
 
 //=====================================================
 // ========================================= modulePlus
@@ -39,16 +39,20 @@ module.exports = function modulePlus(modelNameS, schema, enableDownStream = true
       JSON.parse(JSON.stringify(this))])
     .then(([exists,oldDoc,newDoc]) => {
 
-      let patchs = rfc6902.createPatch(oldDoc,newDoc)
+      let patchs = {}
 
       if(!exists){
-        patchs = [{ op: "add", path: "/", value: {} },...patchs]
+        patchs = [{ op: "add", path: "/", value: newDoc.toJSON() },...patchs]
       }// if we have a updatedAt time. Use it as a check
-      else if(oldDoc.updatedAt){ // TODO: add schema.pre('validate', ...) to reject save if patchs.length is ZERO
+      else {
+        patchs = rfc6902.createPatch(oldDoc,newDoc)
+      }
+
+      if(oldDoc.updatedAt){ // TODO: add schema.pre('validate', ...) to reject save if patchs.length is ZERO
         patchs = [{ op: "test", path: "/updatedAt", value: oldDoc.updatedAt },...patchs]
       }
 
-      streamDB.create({patchs,target:newDoc._id})
+      streamDB.create({patchs,target:newDoc._id, createdAt:new Date})
     })
     .catch((err)=>{ throw err });
 

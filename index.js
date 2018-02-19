@@ -15,7 +15,9 @@ const patch = new mongoose.Schema({
     path: { type: String, required: true },
     from:String, value:mongoose.Schema.Types.Mixed
   },{ _id : false });
-const streamSchema = new mongoose.Schema({ patchs: [patch],  target:mongoose.Schema.Types.ObjectId, createdAt:Date },
+const streamSchema = new mongoose.Schema({ patchs: { type:[patch], required: true },
+                                           target:mongoose.Schema.Types.ObjectId,
+                                           createdAt:{ type: Date, default: Date.now } },
                                          { capped: 1024, minimize: false  });
 
 //=====================================================
@@ -24,7 +26,7 @@ const streamSchema = new mongoose.Schema({ patchs: [patch],  target:mongoose.Sch
 
 module.exports = function modulePlus(modelNameS, schema, enableDownStream = true) {
 
-  const streamDB = mongoose.model('!' + modelNameS, streamSchema);
+  const streamDB = mongoose.model('__' + modelNameS, streamSchema);
 
 //+++++++++++++++++++++++++++++++++++++++++++++++ SAVE
 //++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -39,10 +41,10 @@ module.exports = function modulePlus(modelNameS, schema, enableDownStream = true
       JSON.parse(JSON.stringify(this))])
     .then(([exists,oldDoc,newDoc]) => {
 
-      let patchs = {}
+      let patchs = []
 
       if(!exists){
-        patchs = [{ op: "add", path: "/", value: newDoc.toJSON() },...patchs]
+        patchs = [{ op: "add", path: "/", value: newDoc }]
       }// if we have a updatedAt time. Use it as a check
       else {
         patchs = rfc6902.createPatch(oldDoc,newDoc)
@@ -52,7 +54,7 @@ module.exports = function modulePlus(modelNameS, schema, enableDownStream = true
         patchs = [{ op: "test", path: "/updatedAt", value: oldDoc.updatedAt },...patchs]
       }
 
-      streamDB.create({patchs,target:newDoc._id, createdAt:new Date})
+      streamDB.create({patchs,target:newDoc._id})
     })
     .catch((err)=>{ throw err });
 
@@ -82,7 +84,8 @@ module.exports = function modulePlus(modelNameS, schema, enableDownStream = true
 
     streamDB.count().then((count) => {
       if (0 === count) {
-        return streamDB.create({});
+        // you need at least ONE doc to start the cursor
+        return streamDB.create({ patchs:[], target:null });
       }
       return true;
     }).then( () => {
@@ -98,6 +101,8 @@ module.exports = function modulePlus(modelNameS, schema, enableDownStream = true
       throw err;
     });
   } // END enableDownStream
+
+  // TODO add ".saveBy(..user..)" to attach who made the change on the 'change stream'
 
   return modelDB;
 }; // function modulePlus

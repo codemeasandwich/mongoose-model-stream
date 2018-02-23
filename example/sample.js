@@ -50,7 +50,6 @@ setTimeout(function () {
 }, 100);
 
 
-/*
 // ########################### Test with-out timestamps
 // ####################################################
 
@@ -99,12 +98,12 @@ setTimeout(function () {
     }, 100);
   });
 }, 100);
-*/
+
 
 
 // ###################################### Test removing
 // ####################################################
-/*
+
 //=============================================== Logic
 const CSchema = new Schema({ text: String });
 
@@ -131,7 +130,7 @@ setTimeout(function () {
     return chatMessage.remove();
   }).catch(console.error)
 }, 100);
-*/
+
 
 
 //process.exit()

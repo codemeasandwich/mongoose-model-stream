@@ -12,7 +12,11 @@ a mongoose model generator with a change stream
 
 # Install
 
-`yarn add mongoose-model-stream` or `npm install --save mongoose-model-stream`
+`yarn add mongoose-model-stream`
+
+**or**
+
+`npm install --save mongoose-model-stream`
 
 # How to Use
 
@@ -51,7 +55,9 @@ The payload looks like:
 | Property | Type |Description
 |--- |--- |---
 | patchs | Array | Present for all changes to the item. - An array of [rfc6902] operations.
-| target | String(ID) | The Unique identifier for the item
+| target | String(ID) | The Unique identifier for the target Object
+| _id | String(ID)| The Unique identifier for this diff
+| createdAt | String(Date) | The time the chage was made
 
 ## run samples
 

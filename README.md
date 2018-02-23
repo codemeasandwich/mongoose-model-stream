@@ -29,7 +29,9 @@ This `modelPlus` function takes two arguments.
 
 There is also an optional 3rd argument.
 
-* `enableDownStream` : Change will create change events, without listening to the stream for updates. *(Default: `true`)*
+* `options` OR `enableDownStream`
+    * options: the options **object** that will be passed to the change stream schema. You can set `enableDownStream` as a Property on options
+    * enableDownStream: A **boolean** to change will create change events, without listening to the stream for updates. *(Default: `true`)*
 
 
 ``` js

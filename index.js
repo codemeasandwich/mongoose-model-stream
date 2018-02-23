@@ -15,16 +15,26 @@ const patch = new mongoose.Schema({
     path: { type: String, required: true },
     from:String, value:mongoose.Schema.Types.Mixed
   },{ _id : false });
-const streamSchema = new mongoose.Schema({ patchs: { type:[patch], required: true },
-                                           target:mongoose.Schema.Types.ObjectId,
-                                           createdAt:{ type: Date, default: Date.now } },
-                                         { capped: 1024, minimize: false  });
 
 //=====================================================
 // ========================================= modulePlus
 //=====================================================
 
+const streamSchemaBluePrint = { patchs: { type:[patch], required: true },
+                                target: mongoose.Schema.Types.ObjectId,
+                                createdAt:{ type: Date, default: Date.now } }
+
 module.exports = function modulePlus(modelNameS, schema, enableDownStream = true) {
+
+  let streamSchemaOptions = { capped: 1024, minimize: false  }
+
+  if("object" === typeof enableDownStream){
+    streamSchemaOptions = Object.assgine(streamSchemaOptions,enableDownStream)
+    enableDownStream = streamSchemaOptions.enableDownStream !== false;
+  }
+
+  const streamSchema = new mongoose.Schema(streamSchemaBluePrint,streamSchemaOptions);
+
 
   const streamDB = mongoose.model('__' + modelNameS, streamSchema);
 
@@ -68,7 +78,7 @@ module.exports = function modulePlus(modelNameS, schema, enableDownStream = true
       streamDB.create({
         patchs:[{op: "remove", path: "/"}],
         target:this._id
-      });
+      }).catch(err=>reject(err));
 
       next();
 

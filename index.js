@@ -22,14 +22,15 @@ const patch = new mongoose.Schema({
 
 const streamSchemaBluePrint = { patchs: { type:[patch], required: true },
                                 target: mongoose.Schema.Types.ObjectId,
+                                changedBy: mongoose.Schema.Types.ObjectId,
                                 createdAt:{ type: Date, default: Date.now } }
 
 module.exports = function modulePlus(modelNameS, schema, enableDownStream = true) {
 
-  let streamSchemaOptions = { capped: 1024, minimize: false  }
+  let streamSchemaOptions = { capped: 4096, minimize: false  }
 
   if("object" === typeof enableDownStream){
-    streamSchemaOptions = Object.assgine(streamSchemaOptions,enableDownStream)
+    streamSchemaOptions = Object.assign(streamSchemaOptions,enableDownStream)
     enableDownStream = streamSchemaOptions.enableDownStream !== false;
   }
 
@@ -51,6 +52,14 @@ module.exports = function modulePlus(modelNameS, schema, enableDownStream = true
       JSON.parse(JSON.stringify(this))])
     .then(([exists,oldDoc,newDoc]) => {
 
+      const indexOfChange = changers.findIndex(({item})=> item === this)
+      let whoMadeTheChange;
+
+      if(0 <= indexOfChange){
+        whoMadeTheChange = changers[indexOfChange].id
+        changers = changers.filter((changer,index) => indexOfChange != index)
+      }
+
       let patchs = []
 
       if(!exists){
@@ -64,7 +73,13 @@ module.exports = function modulePlus(modelNameS, schema, enableDownStream = true
         patchs = [{ op: "test", path: "/updatedAt", value: oldDoc.updatedAt },...patchs]
       }
 
-      streamDB.create({patchs,target:newDoc._id})
+      const logToSave = {patchs,target:newDoc._id}
+
+      if(whoMadeTheChange){
+        logToSave.changedBy = whoMadeTheChange
+      }
+
+      streamDB.create(logToSave)
     })
     .catch((err)=>{ throw err });
 
@@ -86,6 +101,22 @@ module.exports = function modulePlus(modelNameS, schema, enableDownStream = true
 
 //+++++++++++++++++++++++++++++++++++++++++++++
 //++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+let changers = []
+
+    schema.methods.saveBy = function(next) {
+        if("function" === typeof next || ! next){
+          return this.save(next)
+        }
+        const id = next._id || next
+        changers.push({
+          id, item:this
+        })
+        return this.save()
+    };
+
+
+
 
   const modelDB = mongoose.model(modelNameS, schema);
 

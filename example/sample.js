@@ -15,7 +15,7 @@ const modulePlus = require('./..');//mongoose-model-stream
 const ASchema = new Schema({  text: String }, { timestamps: true });
 
 //=========================================== generator
-const AModule = modulePlus('A', ASchema);
+const AModule = modulePlus('A', ASchema,{ capped: 10000000 /* 10mb */ });
 
 //===================================== start listening
 AModule.stream.subscribe(console.log, console.error, console.info);

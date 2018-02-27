@@ -37,7 +37,6 @@ There is also an optional 3rd argument.
     * options: the options **object** that will be passed to the change stream schema. You can set `enableDownStream` as a Property on options
     * enableDownStream: A **boolean** to change will create change events, without listening to the stream for updates. *(Default: `true`)*
 
-
 ``` js
 const ChatSchema = new mongoose.schema({
   text: String
@@ -45,8 +44,6 @@ const ChatSchema = new mongoose.schema({
 
 const Chat = modelPlus('Chat', ChatSchema);
 ```
-
-# v2 Api
 
 Attached to `Chat` will be a `.stream` baced on [RxJs]. This will **emit** change events baced on [rfc6902]
 
@@ -58,6 +55,34 @@ The payload looks like:
 | target | String(ID) | The Unique identifier for the target Object
 | _id | String(ID)| The Unique identifier for this diff
 | createdAt | String(Date) | The time the chage was made
+
+### model
+
+A new function will be added to the model
+
+* `saveBy` : This is used the tag a change with who made it.
+
+``` js
+event.when = "today";
+event.saveBy(user);
+```
+
+A `changedBy` **id** will be add to the change record
+
+**Outputted change**
+``` js
+{ patchs:
+   [ {
+     op: 'add',
+     path: '/when',
+     value: 'today'
+   } ],
+  _id: '5a958d12fc413a44ac760fb1',
+  target: '5a958d11fc413a44ac760fa9',
+  changedBy: '5a95872c39c0be3afaeb9a86',
+  createdAt: '2018-08-12T04:46:02.009Z'
+}
+```
 
 ## run samples
 

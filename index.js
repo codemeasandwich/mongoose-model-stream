@@ -6,7 +6,7 @@
 const rfc6902 = require('rfc6902');
 const Subject = require('rx').Subject;
 const mongoose = require('mongoose');
-
+let totle = 0
 //++++++++++++++++++++++++++++++++++++++++++++++ Setup
 //++++++++++++++++++++++++++++++++++++++++++++++++++++
 
@@ -27,7 +27,9 @@ const streamSchemaBluePrint = { patchs: { type:[patch], required: true },
 
 module.exports = mongoose.moduleStream = function moduleStream(modelNameS, schema, enableDownStream = true) {
 
-  let streamSchemaOptions = { capped: 4096, minimize: false  }
+  const hasUpdatedAt = !!(schema.paths.updatedAt)
+
+  let streamSchemaOptions = { capped: 4096, minimize: false ,versionKey: false  }
 
   if("object" === typeof enableDownStream){
     streamSchemaOptions = Object.assign(streamSchemaOptions,enableDownStream)
@@ -39,11 +41,41 @@ module.exports = mongoose.moduleStream = function moduleStream(modelNameS, schem
 
   const streamDB = mongoose.model('__' + modelNameS, streamSchema);
 
+//+++++++++++++++++++++++++++++++++++++++++++++ UPDATE
+//++ docs.mongodb.com/manual/reference/operator/update
+
+let lastUpdatedList = []
+
+  schema.pre('update', function() {
+    modelDB.find().sort({'_id': -1}).then(list => lastUpdatedList = list)
+  });
+
+  schema.post('update', function() {
+
+    modelDB.find().sort({'_id': -1}).then(list =>{
+
+      list.forEach((item,index)=>{
+
+        const oldVal = JSON.parse(JSON.stringify(lastUpdatedList[index])),
+              newVal = JSON.parse(JSON.stringify(item))
+
+        let patchs =  rfc6902.createPatch(oldVal,newVal)
+        if(0 < patchs.length){
+          if(newVal.updatedAt){
+            patchs = [{ op: "test", path: "/updatedAt", value: oldVal.updatedAt },...patchs]
+          }
+          streamDB.create({patchs,target:item._id})
+        }
+
+      })
+      lastUpdatedList = [] // reset
+    })
+  });
 //+++++++++++++++++++++++++++++++++++++++++++++++ SAVE
 //++++++++++++++++++++++++++++++++++++++++++++++++++++
 
   schema.pre('save', function() {
-
+    totle++ // because you can have a race condition with inserting the first doc(for the cuser) after a user change as been saved
     modelDB.findById(this._id)
     .then(oldDoc => [
       !!oldDoc,
@@ -128,7 +160,7 @@ let changers = []
     modelDB.stream = new Subject();
 
     streamDB.count().then((count) => {
-      if (0 === count) {
+      if (0 === count && 0 === totle) {
         // you need at least ONE doc to start the cursor
         return streamDB.create({ patchs:[], target:null });
       }

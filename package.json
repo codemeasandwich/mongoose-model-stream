@@ -20,7 +20,7 @@
     "mocha": "^3.0.1"
   },
   "scripts": {
-    "example": "example/sample.js",
+    "example": "node example/sample.js",
     "test": "mocha ./test.js",
     "test-travis": "./node_modules/istanbul/lib/cli.js cover ./node_modules/mocha/bin/_mocha -- -R spec ./test.js"
   },

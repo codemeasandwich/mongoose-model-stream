@@ -17,7 +17,7 @@ const patch = new mongoose.Schema({
   },{ _id : false });
 
 //=====================================================
-// ========================================= modulePlus
+// ========================================= moduleStream
 //=====================================================
 
 const streamSchemaBluePrint = { patchs: { type:[patch], required: true },
@@ -25,7 +25,7 @@ const streamSchemaBluePrint = { patchs: { type:[patch], required: true },
                                 changedBy: mongoose.Schema.Types.ObjectId,
                                 createdAt:{ type: Date, default: Date.now } }
 
-module.exports = function modulePlus(modelNameS, schema, enableDownStream = true) {
+module.exports = mongoose.moduleStream = function moduleStream(modelNameS, schema, enableDownStream = true) {
 
   let streamSchemaOptions = { capped: 4096, minimize: false  }
 
@@ -67,6 +67,10 @@ module.exports = function modulePlus(modelNameS, schema, enableDownStream = true
       }// if we have a updatedAt time. Use it as a check
       else {
         patchs = rfc6902.createPatch(oldDoc,newDoc)
+      }
+
+      if(0 === patchs.length){
+        return
       }
 
       if(oldDoc.updatedAt){ // TODO: add schema.pre('validate', ...) to reject save if patchs.length is ZERO
@@ -146,4 +150,4 @@ let changers = []
   // TODO add ".saveBy(..user..)" to attach who made the change on the 'change stream'
 
   return modelDB;
-}; // function modulePlus
+}; // function moduleStream

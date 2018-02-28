@@ -1,12 +1,12 @@
 'use strict';
 
-const mongooseO = require('mongoose');
-      mongooseO.Promise = global.Promise;
+const mongoose = require('mongoose');
+      mongoose.Promise = global.Promise;
 
-const Schema = mongooseO.Schema;
-const dbO = mongooseO.connect('mongodb://localhost/testmongoosestream');
+const Schema = mongoose.Schema;
+const dbO = mongoose.connect('mongodb://localhost/testmongoosestream');
 
-const modulePlus = require('./..');//mongoose-model-stream
+const moduleStream = require('./..');//mongoose-model-stream
 
 // ############################### Test with timestamps
 // ####################################################
@@ -15,7 +15,7 @@ const modulePlus = require('./..');//mongoose-model-stream
 const ASchema = new Schema({  text: String }, { timestamps: true });
 
 //=========================================== generator
-const AModule = modulePlus('A', ASchema,{ capped: 10000000 /* 10mb */ });
+const AModule = moduleStream('A', ASchema,{ capped: 10000000 /* 10mb */ });
 
 //===================================== start listening
 AModule.stream.subscribe(console.log, console.error, console.info);
@@ -27,10 +27,10 @@ setTimeout(function () {
   AModule.create({ text: "foo_A" ,y : 1.2})
   .then(function (chatMessage) {
 
-    console.log(" >> FROM ", 'text = "' + chatMessage.text + '"');
-    chatMessage.text2 = "bar_A";
+    //console.log(" >> FROM ", 'text = "' + chatMessage.text + '"');
+    chatMessage.text = "bar_A";
     chatMessage.x = 1.2;
-    console.log(" >> TO ", 'text = "' + chatMessage.text + '"');
+    //console.log(" >> TO ", 'text = "' + chatMessage.text + '"');
 
 //+++++++++++++++++++++++++++++++++++++++++++++ update
     return chatMessage.save();
@@ -38,9 +38,9 @@ setTimeout(function () {
 
     setTimeout(function () {
 
-      console.log(" >>> FROM ", 'text = "' + chatMessage.text + '"');
+      //console.log(" >>> FROM ", 'text = "' + chatMessage.text + '"');
       chatMessage.text = "baz_A";
-      console.log(" >>> TO ", 'text = "' + chatMessage.text + '"');
+      //console.log(" >>> TO ", 'text = "' + chatMessage.text + '"');
 
 //+++++++++++++++++++++++++++++++++++++++++++++ update
 
@@ -57,7 +57,7 @@ setTimeout(function () {
 const BSchema = new Schema({ text: String });
 
 //=========================================== generator
-const BModule = modulePlus('B', BSchema);
+const BModule = mongoose.moduleStream('B', BSchema);
 
 //===================================== start listening
 
@@ -66,8 +66,8 @@ const BChanges=[3,1,1];
 const BActions=["add","replace","replace"]
 
 BModule.stream.subscribe(function({patchs}){
-  console.log(BChanges[Bcount].legnth === patchs.legnth
-    && patchs.every(({op})=>op === BActions[Bcount]));
+  //console.log(BChanges[Bcount].legnth === patchs.legnth
+  //  && patchs.every(({op})=>op === BActions[Bcount]));
   Bcount++;
   }, console.error, console.info);
 
@@ -78,9 +78,9 @@ setTimeout(function () {
   BModule.create({ text: "foo_B" })
   .then(function (chatMessage) {
 
-    console.log(" >> FROM ", 'text = "' + chatMessage.text + '"');
+    //console.log(" >> FROM ", 'text = "' + chatMessage.text + '"');
     chatMessage.text = "bar_B";
-    console.log(" >> TO ", 'text = "' + chatMessage.text + '"');
+    //console.log(" >> TO ", 'text = "' + chatMessage.text + '"');
 
 //+++++++++++++++++++++++++++++++++++++++++++++ update
     return chatMessage.save();
@@ -88,9 +88,9 @@ setTimeout(function () {
 
     setTimeout(function () {
 
-      console.log(" >>> FROM ", 'text = "' + chatMessage.text + '"');
+      //console.log(" >>> FROM ", 'text = "' + chatMessage.text + '"');
       chatMessage.text = "baz_B";
-      console.log(" >>> TO ", 'text = "' + chatMessage.text + '"');
+      //console.log(" >>> TO ", 'text = "' + chatMessage.text + '"');
 
 //+++++++++++++++++++++++++++++++++++++++++++++ update
 
@@ -108,14 +108,14 @@ setTimeout(function () {
 const CSchema = new Schema({ text: String });
 
 //=========================================== generator
-const CModule = modulePlus('C', CSchema);
+const CModule = mongoose.moduleStream('C', CSchema);
 
 //===================================== start listening
 
 const CTest = ['create','remove'];
 let Ccount = 0;
 CModule.stream.subscribe(function(doc){
-  console.log(Ccount+" C >> "+CTest[Ccount]+" >> "+doc.text+ ' ++++ ' +doc, CTest[Ccount] == doc);
+  //console.log(Ccount+" C >> "+CTest[Ccount]+" >> "+doc.text+ ' ++++ ' +doc, CTest[Ccount] == doc);
   Ccount++;
 }, console.error, console.info);
 

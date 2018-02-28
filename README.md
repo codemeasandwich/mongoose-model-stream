@@ -21,12 +21,12 @@ a mongoose model generator with a change stream
 # How to Use
 
 ``` js
-const modelPlus = require('mongoose-model-stream');
+const moduleStream = require('mongoose-model-stream');
 ```
 
 ### constructor
 
-This `modelPlus` function takes two arguments.
+This `moduleStream` function takes two arguments.
 
 * `modelName`: The name of the model
 * `schema` : The schema definition of the model.
@@ -42,7 +42,7 @@ const ChatSchema = new mongoose.schema({
   text: String
 });
 
-const Chat = modelPlus('Chat', ChatSchema);
+const Chat = moduleStream('Chat', ChatSchema);
 ```
 
 Attached to `Chat` will be a `.stream` baced on [RxJs]. This will **emit** change events baced on [rfc6902]
@@ -93,14 +93,14 @@ node example/sample.js
 # Example
 
 ``` js
-const { Schema } = require('mongoose');
-const moduleWithStream = require('mongoose-model-stream');
+require('mongoose-model-stream');
+const { Schema, moduleStream } = require('mongoose');
 
 // create a schema
 const ChatSchema = new Schema({ text: String }, { timestamps: true });
 
 // create a module
-const Chat = moduleWithStream('Chat', ChatSchema);
+const Chat = moduleStream('Chat', ChatSchema);
 
 // subscribe to change events
 Chat.stream.subscribe(console.log, console.error, console.info);

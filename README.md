@@ -67,7 +67,7 @@ event.when = "today";
 event.saveBy(user);
 ```
 
-A `changedBy` **id** will be add to the change record
+A `saveBy` **id** will be add to the change record
 
 **Outputted change**
 ``` js
@@ -79,7 +79,7 @@ A `changedBy` **id** will be add to the change record
    } ],
   _id: '5a958d12fc413a44ac760fb1',
   target: '5a958d11fc413a44ac760fa9',
-  changedBy: '5a95872c39c0be3afaeb9a86',
+  saveBy: '5a95872c39c0be3afaeb9a86',
   createdAt: '2018-08-12T04:46:02.009Z'
 }
 ```

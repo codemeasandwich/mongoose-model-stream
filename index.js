@@ -17,12 +17,12 @@ const patch = new mongoose.Schema({
   },{ _id : false });
 
 //=====================================================
-// ========================================= moduleStream
+//======================================== moduleStream
 //=====================================================
 
 const streamSchemaBluePrint = { patchs: { type:[patch], required: true },
                                 target: mongoose.Schema.Types.ObjectId,
-                                changedBy: mongoose.Schema.Types.ObjectId,
+                                saveBy: mongoose.Schema.Types.ObjectId,
                                 createdAt:{ type: Date, default: Date.now } }
 
 module.exports = mongoose.moduleStream = function moduleStream(modelNameS, schema, enableDownStream = true) {
@@ -56,10 +56,10 @@ let lastUpdatedList = []
 
       list.forEach((item,index)=>{
 
-        const oldVal = JSON.parse(JSON.stringify(lastUpdatedList[index])),
-              newVal = JSON.parse(JSON.stringify(item))
+        const oldVal = lastUpdatedList[index],
+              newVal = item
 
-        let patchs =  rfc6902.createPatch(oldVal,newVal)
+        let patchs =  rfc6902.createPatch(oldVal.toObject(),newVal.toObject())
         if(0 < patchs.length){
           if(newVal.updatedAt){
             patchs = [{ op: "test", path: "/updatedAt", value: oldVal.updatedAt },...patchs]
@@ -74,14 +74,14 @@ let lastUpdatedList = []
 //+++++++++++++++++++++++++++++++++++++++++++++++ SAVE
 //++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-  schema.pre('save', function() {
+  schema.pre('save', function(next) {
     totle++ // because you can have a race condition with inserting the first doc(for the cuser) after a user change as been saved
     modelDB.findById(this._id)
     .then(oldDoc => [
       !!oldDoc,
       // https://github.com/chbrown/rfc6902/issues/15
-      oldDoc ? JSON.parse(JSON.stringify(oldDoc)) : {},
-      JSON.parse(JSON.stringify(this))])
+      oldDoc || {},
+      this])
     .then(([exists,oldDoc,newDoc]) => {
 
       const indexOfChange = changers.findIndex(({item})=> item === this)
@@ -98,10 +98,11 @@ let lastUpdatedList = []
         patchs = [{ op: "add", path: "/", value: newDoc }]
       }// if we have a updatedAt time. Use it as a check
       else {
-        patchs = rfc6902.createPatch(oldDoc,newDoc)
+        patchs = rfc6902.createPatch(oldDoc.toObject(),newDoc.toObject())
       }
 
       if(0 === patchs.length){
+        next();
         return
       }
 
@@ -112,12 +113,16 @@ let lastUpdatedList = []
       const logToSave = {patchs,target:newDoc._id}
 
       if(whoMadeTheChange){
-        logToSave.changedBy = whoMadeTheChange
+        logToSave.saveBy = whoMadeTheChange
       }
 
+      next();
       streamDB.create(logToSave)
     })
-    .catch((err)=>{ throw err });
+    .catch((err)=>{
+        next();
+        throw err
+    });
 
   });// END schema pre 'save'
 

@@ -10,6 +10,32 @@ let totle = 0
 //++++++++++++++++++++++++++++++++++++++++++++++ Setup
 //++++++++++++++++++++++++++++++++++++++++++++++++++++
 
+function checkVal(val) {
+    if ("object" === typeof val
+    && mongoose.Types.ObjectId.isValid(val)) {
+      return val+""
+    }
+    if ("[object Object]" === Object.prototype.toString.call(val)
+           || Array.isArray(val)) {
+      return scrubObjIdRefs(val)
+    }
+    return val
+}
+
+function scrubObjIdRefs(data) {
+    // We use toString.call, so we dont catch Dates
+  if ("[object Object]" === Object.prototype.toString.call(data)) {
+    const newObj = {}
+    for (const key in data) {
+        newObj[key] = checkVal(data[key])
+    }
+    return newObj
+  } else if (Array.isArray(data)){
+    return data.map(checkVal)
+  }
+  return data
+}
+
 const patch = new mongoose.Schema({
     op: { type: String, required: true },
     path: { type: String, required: true },
@@ -59,7 +85,7 @@ let lastUpdatedList = []
         const oldVal = lastUpdatedList[index],
               newVal = item
 
-        let patchs =  rfc6902.createPatch(oldVal.toObject(),newVal.toObject())
+        let patchs =  rfc6902.createPatch(scrubObjIdRefs(oldVal.toObject()),scrubObjIdRefs(newVal.toObject()))
         if(0 < patchs.length){
           if(newVal.updatedAt){
             patchs = [{ op: "test", path: "/updatedAt", value: oldVal.updatedAt },...patchs]
@@ -98,7 +124,7 @@ let lastUpdatedList = []
         patchs = [{ op: "add", path: "/", value: newDoc }]
       }// if we have a updatedAt time. Use it as a check
       else {
-        patchs = rfc6902.createPatch(oldDoc.toObject(),newDoc.toObject())
+        patchs = rfc6902.createPatch(scrubObjIdRefs(oldDoc.toObject()),scrubObjIdRefs(newDoc.toObject()))
       }
 
       if(0 === patchs.length){

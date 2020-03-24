@@ -58,6 +58,8 @@ The payload looks like:
 
 ### model
 
+#### Create
+
 A new function will be added to the model
 
 * `saveBy` : This is used the tag a change with who made it.
@@ -84,7 +86,25 @@ A `saveBy` **id** will be add to the change record
 }
 ```
 
-## run samples
+#### Update
+
+* **"saveBy"** is also provided in the `update` function(s)
+   * `updateMany`, `updateOne`, `findOneAndUpdate`, `findByIdAndUpdate`
+ 
+You said the  **"saveBy"** bypassing it in the *"options"* argument.
+This can be an **ID of an object(String)** that will be used for all patchs 
+or a **function** to calculate the ID for each specific updated document
+
+```js
+const conditions = {foo:true },
+updateValues = {setBarTo:false},
+options = {savedBy:(oldDoc,newDoc,patchs)=>oldDoc.user_id}
+event.updateMany(conditions,update,options)
+```
+
+----
+
+# run samples
 
 ``` bash
 node example/sample.js

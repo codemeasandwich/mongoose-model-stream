@@ -70,15 +70,25 @@ module.exports = mongoose.moduleStream = function moduleStream(modelNameS, schem
 //+++++++++++++++++++++++++++++++++++++++++++++ UPDATE
 //++ docs.mongodb.com/manual/reference/operator/update
 
-let lastUpdatedList = []
+let lastUpdatedList = {}
 
-  schema.pre('update', function() {
-    modelDB.find().sort({'_id': -1}).then(list => lastUpdatedList = list)
-  });
+function preUpdate(next) {
+    
+    modelDB.find(this._conditions)
+           .sort({'_id': -1})
+           .then(list => {
+                lastUpdatedList = list;
+                next()
+           })
+           /* }).catch(logger.error)
+           .then(()=>next())*/
+  }
 
-  schema.post('update', function() {
+function postUpdate(doc,next) {
 
-    modelDB.find().sort({'_id': -1}).then(list =>{
+    modelDB.find({'_id': { $in: lastUpdatedList.map(({_id})=>_id) }})
+           .sort({'_id': -1})
+           .then(list =>{
 
       list.forEach((item,index)=>{
 
@@ -90,13 +100,31 @@ let lastUpdatedList = []
           if(newVal.updatedAt){
             patchs = [{ op: "test", path: "/updatedAt", value: oldVal.updatedAt },...patchs]
           }
-          streamDB.create({patchs,target:item._id})
+          
+        const record = { patchs,
+                 target:item._id,
+                 saveBy: savedBy ? "string" === typeof savedBy ? savedBy
+                                                               : savedBy(oldVal,newVal,patchs)
+                                 : undefined  }
+                                           
+          streamDB.create(record)
         }
-
       })
-      lastUpdatedList = [] // reset
-    })
-  });
+      savedBy = undefined
+      lastUpdatedList = {} // reset
+      next()
+    }).catch(err=>{
+            throw err
+           // logger.error(err)
+           // next()
+            })
+  }
+  
+  schema.pre(/^update/, preUpdate);
+  schema.pre(/Update$/, preUpdate);
+
+  schema.post(/^update/, postUpdate);
+  schema.post(/Update$/, postUpdate);
 //+++++++++++++++++++++++++++++++++++++++++++++++ SAVE
 //++++++++++++++++++++++++++++++++++++++++++++++++++++
 
@@ -212,5 +240,22 @@ let changers = []
 
   // TODO add ".saveBy(..user..)" to attach who made the change on the 'change stream'
 
-  return modelDB;
+  const wrappers = {}
+   let  savedBy
+  
+  ["updateMany", "updateOne", "findOneAndUpdate", "findByIdAndUpdate"].forEach( fnName => {
+     
+    const ogFn = modelDB[fnName];
+    
+    wrappers[fnName] = function(conditions,update,options){
+        
+        if (options.savedBy) {
+          savedBy = options.savedBy
+        }
+        return ogFn.call(modelDB,conditions,update,options)
+    } // END of wrapper
+  })
+  
+  
+  return Object.assign(modelDB, wrappers);
 }; // function moduleStream

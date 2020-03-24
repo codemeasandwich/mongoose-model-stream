@@ -89,7 +89,7 @@ A `saveBy` **id** will be add to the change record
 #### Update
 
 * **"saveBy"** is also provided in the `update` function(s)
-   * `updateMany`, `updateOne`, `findOneAndUpdate`, `findByIdAndUpdate`
+   * `update`, `updateMany`, `updateOne`, `findOneAndUpdate`, `findByIdAndUpdate`
  
 You said the  **"saveBy"** bypassing it in the *"options"* argument.
 This can be an **ID of an object(String)** that will be used for all patchs 

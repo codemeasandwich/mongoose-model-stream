@@ -243,13 +243,13 @@ let changers = []
   const wrappers = {}
    let  savedBy
   
-  ["updateMany", "updateOne", "findOneAndUpdate", "findByIdAndUpdate"].forEach( fnName => {
+  ["update","updateMany", "updateOne", "findOneAndUpdate", "findByIdAndUpdate"].forEach( fnName => {
      
     const ogFn = modelDB[fnName];
     
     wrappers[fnName] = function(conditions,update,options){
         
-        if (options.savedBy) {
+        if (options && options.savedBy) {
           savedBy = options.savedBy
         }
         return ogFn.call(modelDB,conditions,update,options)

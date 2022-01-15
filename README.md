@@ -55,6 +55,7 @@ The payload looks like:
 | target | String(ID) | The Unique identifier for the target Object
 | _id | String(ID)| The Unique identifier for this diff
 | createdAt | String(Date) | The time the chage was made
+| action | String | This will be "**CREATE**", "**UPDATE**" or "**DELETE**" depending on the state of the document in the database
 
 ### model
 
@@ -82,7 +83,8 @@ A `saveBy` **id** will be add to the change record
   _id: '5a958d12fc413a44ac760fb1',
   target: '5a958d11fc413a44ac760fa9',
   saveBy: '5a95872c39c0be3afaeb9a86',
-  createdAt: '2018-08-12T04:46:02.009Z'
+  createdAt: '2018-08-12T04:46:02.009Z',
+  action: "UPDATE"
 }
 ```
 
@@ -142,17 +144,25 @@ Chat.create({ text: "foo" })
 { patchs:
    [ {
      op: 'add',
-     path: '/',
-     value: {
-       text:'foo',
-       _id:'5a86eea992f78d54f1cd65e9',
-       updatedAt:'2018-08-12T04:46:01.993Z',
-       createdAt:'2018-08-12T04:46:01.993Z'
-     }
-   } ],
+     path: '/text',
+     value: :'foo'
+   }, {
+     op: 'add',
+     path: '/_id',
+     value: '5a86eea992f78d54f1cd65e9'
+   }, {
+     op: 'add',
+     path: '/updatedAt',
+     value: :'2018-08-12T04:46:01.993Z'
+   }, {
+     op: 'add',
+     path: '/createdAt',
+     value: '2018-08-12T04:46:01.993Z'
+   }  ],
   _id: '5a86eeaa92f78d54f1cd65ea',
   target: '5a86eea992f78d54f1cd65e9',
-  createdAt: '2018-08-12T04:46:02.009Z'
+  createdAt: '2018-08-12T04:46:02.009Z',
+  action: "CREATE"
 }
 ```
 
@@ -164,7 +174,8 @@ Chat.create({ text: "foo" })
      { op: 'replace', path: '/updatedAt', value: '2018-08-12T04:46:02.116Z' }, ],
   _id: '5a86eeaa92f78d54f1cd65eb',
   target: '5a86eea992f78d54f1cd65e9',
-  createdAt: '2018-08-12T04:46:02.022Z'
+  createdAt: '2018-08-12T04:46:02.022Z',
+  action: "UPDATE"
  }
 ```
 
@@ -176,7 +187,8 @@ Chat.create({ text: "foo" })
      { op: 'replace', path: '/updatedAt', value: '2018-08-12T04:46:02.342Z' }, ],
   _id: '5a86eeaa92f78d54f1cd65ec',
   target: '5a86eea992f78d54f1cd65e9',
-  createdAt: '2018-08-12T04:46:02.122Z'
+  createdAt: '2018-08-12T04:46:02.122Z',
+  action: "UPDATE"
  }
 ```
 [RxJs]: http://reactivex.io/rxjs/

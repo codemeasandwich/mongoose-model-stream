@@ -6,7 +6,7 @@
 const rfc6902 = require('rfc6902');
 const Subject = require('rx').Subject;
 const mongoose = require('mongoose');
-let totle = 0
+
 //++++++++++++++++++++++++++++++++++++++++++++++ Setup
 //++++++++++++++++++++++++++++++++++++++++++++++++++++
 
@@ -49,10 +49,11 @@ const patch = new mongoose.Schema({
 const streamSchemaBluePrint = { patchs: { type:[patch], required: true },
                                 target: mongoose.Schema.Types.ObjectId,
                                 saveBy: mongoose.Schema.Types.ObjectId,
+				action:{ type: String, enum:["CREATE","UPDATE","DELETE"], default: "UPDATE" },
                                 createdAt:{ type: Date, default: Date.now } }
 
 module.exports = mongoose.moduleStream = function moduleStream(modelNameS, schema, enableDownStream = true) {
-
+  let totle = 0
   const hasUpdatedAt = !!(schema.paths.updatedAt)
 
   let streamSchemaOptions = { capped: 4096, minimize: false ,versionKey: false  }
@@ -132,11 +133,11 @@ function postUpdate(doc,next) {
     totle++ // because you can have a race condition with inserting the first doc(for the cuser) after a user change as been saved
     modelDB.findById(this._id)
     .then(oldDoc => [
-      !!oldDoc,
+      !oldDoc,
       // https://github.com/chbrown/rfc6902/issues/15
       oldDoc || {},
       this])
-    .then(([exists,oldDoc,newDoc]) => {
+    .then(([toCreate,oldDoc,newDoc]) => {
 
       const indexOfChange = changers.findIndex(({item})=> item === this)
       let whoMadeTheChange;
@@ -148,12 +149,6 @@ function postUpdate(doc,next) {
 
       let patchs = []
 
-      if(!exists){
-        patchs = [{ op: "add", path: "/", value: newDoc }]
-      }// if we have a updatedAt time. Use it as a check
-      else {
-        patchs = rfc6902.createPatch(scrubObjIdRefs(oldDoc.toObject()),scrubObjIdRefs(newDoc.toObject()))
-      }
 
       if(0 === patchs.length){
         next();
@@ -164,7 +159,7 @@ function postUpdate(doc,next) {
         patchs = [{ op: "test", path: "/updatedAt", value: oldDoc.updatedAt },...patchs]
       }
 
-      const logToSave = {patchs,target:newDoc._id}
+      const logToSave = {patchs,target:newDoc._id,action:toCreate?"CREATE":"UPDATE"}
 
       if(whoMadeTheChange){
         logToSave.saveBy = whoMadeTheChange
@@ -187,7 +182,8 @@ function postUpdate(doc,next) {
 
       streamDB.create({
         patchs:[{op: "remove", path: "/"}],
-        target:this._id
+        target:this._id,
+        action:"DELETE"
       }).catch(err=>reject(err));
 
       next();

@@ -55,7 +55,10 @@ The payload looks like:
 | target | String(ID) | The Unique identifier for the target Object
 | _id | String(ID)| The Unique identifier for this diff
 | createdAt | String(Date) | The time the chage was made
-| action | String | This will be "**CREATE**", "**UPDATE**" or "**DELETE**" depending on the state of the document in the database
+| tag | String | A customisable identifier for this change
+| action | String(Enum) | This will be "**CREATE**", "**UPDATE**" or "**DELETE**" depending on the state of the document in the database
+| getChange | fn() ➜ Obj |  an object with only the changes applied
+| getTarget | fn() ➜ promise ➜ doc |  get the target document from the Database
 
 ### model
 
@@ -103,6 +106,19 @@ updateValues = {setBarTo:false},
 options = {savedBy:(oldDoc,newDoc,patchs)=>oldDoc.user_id}
 event.updateMany(conditions,update,options)
 ```
+
+### tag
+
+A custom string denoting the change can be added to the following functions
+
+ * Create
+ e.g. `` const event = await Module.create({ text:updateTextTag },{ tag :"FOO_1" })``
+ * save
+ e.g. ``event.save("FOO_2")``  or ``event.save({ tag :"FOO_3"})`` 
+ * saveBy
+ e.g. ``event.saveBy(user,"FOO_4")``
+ * update
+ e.g. ``Module.updateOne({_id},{$set:{text:"bar"}},{ tag : "FOO_5" })``
 
 ----
 

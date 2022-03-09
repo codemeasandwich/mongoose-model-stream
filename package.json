@@ -1,6 +1,6 @@
 {
   "name": "mongoose-model-stream",
-  "version": "3.0.0",
+  "version": "3.1.0",
   "description": "a mongoose model generator with a change stream",
   "main": "index.js",
   "bin": {},

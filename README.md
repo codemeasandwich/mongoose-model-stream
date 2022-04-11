@@ -52,13 +52,12 @@ The payload looks like:
 | Property | Type |Description
 |--- |--- |---
 | patchs | Array | Present for all changes to the item. - An array of [rfc6902] operations.
-| target | String(ID) | The Unique identifier for the target Object
+| target | Magic | (Object/Function/String) call as a function ➜ promise ➜ current doc in DB, toString ➜ the documents ID
 | _id | String(ID)| The Unique identifier for this diff
 | createdAt | String(Date) | The time the chage was made
 | tag | String | A customisable identifier for this change
 | action | String(Enum) | This will be "**CREATE**", "**UPDATE**" or "**DELETE**" depending on the state of the document in the database
 | getChange | fn() ➜ Obj |  an object with only the changes applied
-| getTarget | fn() ➜ promise ➜ doc |  get the target document from the Database
 
 ### model
 

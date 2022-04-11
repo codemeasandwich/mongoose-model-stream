@@ -60,7 +60,7 @@ const patch = new mongoose.Schema({
 //++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 const streamSchemaBluePrint = { patchs: { type:[patch], required: true },
-                                target: mongoose.Schema.Types.ObjectId,
+                                target: Object,
                                 tag: String,
                                 saveBy: mongoose.Schema.Types.ObjectId,
 				action:{ type: String, enum:["CREATE","UPDATE","DELETE"], default: "UPDATE" },
@@ -72,7 +72,7 @@ const streamSchemaBluePrint = { patchs: { type:[patch], required: true },
 
 function setupChageDocument(modelNameS, hasUpdatedAt, enableDownStream) {
   
-  let streamSchemaOptions = { capped: 4096, minimize: false, versionKey: false  }
+  let streamSchemaOptions = { capped: 40960, minimize: false, versionKey: false  }
   
   if("object" === typeof enableDownStream){
     streamSchemaOptions = Object.assign(streamSchemaOptions,enableDownStream)
@@ -128,13 +128,17 @@ function wireUpStream(modelDB,streamDB){
     
    
     change.getChange = getGetChangeFn(change)
-    change.getTarget = () => modelDB.findById(change.target)
+    
+    change.target = function(){ return modelDB.findById(change.target.id) }
+    change.target.toObject = ()=> change.toObject().targetObj
+    change.target.toJSON = ()=> JSON.stringify(change.getTarget.toObject())
+    change.target.toString = ()=> change.targetObj.id+""
     
     const toObject = change.toObject.bind(change)
     change.toObject = ()=> {
         const obj = toObject()
         obj.getChange = change.getChange
-        obj.getTarget = change.getTarget
+        obj.target = change.target.toObject()
         return obj
     } // END toObject
 
@@ -205,13 +209,14 @@ function postUpdate(doc,next) {
           }
           
           const record = { patchs,
-                 target:item._id,
+                 target:doc,
                  saveBy: savedBy ? "string" === typeof savedBy ? savedBy
                                                                : savedBy(oldVal,newVal,patchs)
                                  : undefined,
                    tag :    tag  ? "string" === typeof tag     ? tag
                                                                : tag(oldVal,newVal,patchs)
-                                 : undefined  }
+                                 : undefined
+                }
           
           streamDBcreate(record)
         }
@@ -278,7 +283,7 @@ function postUpdate(doc,next) {
 
       const logToSave = {
         patchs,
-        target : newDoc._id,
+        target : newDoc,
         action : toCreate ? "CREATE"
                           : "UPDATE"
       } // END logToSave
@@ -324,7 +329,7 @@ function postUpdate(doc,next) {
 
       streamDB.create({
         patchs:[{op: "remove", path: "/"}],
-        target:this._id,
+        target:this,
         action:"DELETE"
       }).catch(err=>reject(err));
 
